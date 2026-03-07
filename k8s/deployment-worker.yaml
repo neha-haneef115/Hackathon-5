@@ -1,0 +1,226 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fte-worker
+  namespace: customer-success-fte
+  labels:
+    app: customer-success-fte
+    component: worker
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: customer-success-fte
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: customer-success-fte
+        component: worker
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: worker
+        image: your-registry/customer-success-fte:latest
+        imagePullPolicy: Always
+        command:
+        - python
+        - -m
+        - production.workers.message_processor
+        envFrom:
+        - configMapRef:
+            name: fte-config
+        - secretRef:
+            name: fte-secrets
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+        # Workers don't have HTTP probes since they're not HTTP services
+        # Use startup probe for container health
+        startupProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import production.database.connection; import asyncio; asyncio.run(production.database.connection.db_manager.test_connection())"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 30
+          successThreshold: 1
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import production.database.connection; import asyncio; asyncio.run(production.database.connection.db_manager.test_connection())"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+          successThreshold: 1
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: logs
+          mountPath: /app/logs
+        - name: cache
+          mountPath: /app/cache
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - "sleep 15"
+      volumes:
+      - name: tmp
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: logs
+        emptyDir:
+          sizeLimit: 500Mi
+      - name: cache
+        emptyDir:
+          sizeLimit: 2Gi
+      nodeSelector:
+        kubernetes.io/arch: "amd64"
+      tolerations:
+      - key: "workload"
+        operator: "Equal"
+        value: "fte"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - customer-success-fte
+              topologyKey: kubernetes.io/hostname
+      imagePullSecrets:
+      - name: registry-secret
+      terminationGracePeriodSeconds: 60
+      restartPolicy: Always
+---
+# Metrics Collector Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fte-metrics-collector
+  namespace: customer-success-fte
+  labels:
+    app: customer-success-fte
+    component: metrics-collector
+    version: v1
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: customer-success-fte
+      component: metrics-collector
+  template:
+    metadata:
+      labels:
+        app: customer-success-fte
+        component: metrics-collector
+        version: v1
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: metrics-collector
+        image: your-registry/customer-success-fte:latest
+        imagePullPolicy: Always
+        command:
+        - python
+        - -m
+        - production.workers.metrics_collector
+        envFrom:
+        - configMapRef:
+            name: fte-config
+        - secretRef:
+            name: fte-secrets
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "200m"
+            memory: "512Mi"
+        startupProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import production.database.connection; import asyncio; asyncio.run(production.database.connection.db_manager.test_connection())"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 30
+          successThreshold: 1
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import production.database.connection; import asyncio; asyncio.run(production.database.connection.db_manager.test_connection())"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+          successThreshold: 1
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: tmp
+        emptyDir:
+          sizeLimit: 500Mi
+      nodeSelector:
+        kubernetes.io/arch: "amd64"
+      imagePullSecrets:
+      - name: registry-secret
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always

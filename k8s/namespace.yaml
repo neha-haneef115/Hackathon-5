@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: customer-success-fte
+  labels:
+    app: customer-success-fte
+    environment: production
+    managed-by: kustomize
+---
+# NetworkPolicy for the namespace (optional but recommended)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: customer-success-fte-netpol
+  namespace: customer-success-fte
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+  egress:
+    - to: []
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+    ports:
+      - protocol: TCP
+        port: 53
+      - protocol: UDP
+        port: 53

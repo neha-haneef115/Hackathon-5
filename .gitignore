@@ -1,0 +1,45 @@
+# Environment variables
+.env
+.env.local
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-error.log*
+yarn.lock
+package-lock.json
+
+# Database data
+postgres_data/
+*.sqlite3
+
+# IDE and editor files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Test artifacts
+.coverage/
+.pytest_cache/
+htmlcov/
+test-results/
+.locust/
+
+# Docker
+docker-compose.override.yml
+docker-compose.override.yml
+
+# OS generated files
+.DS_Store
+Thumbs.db
