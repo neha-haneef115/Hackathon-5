@@ -11,8 +11,20 @@ from typing import Dict, List, Optional, Any
 
 from ..database.connection import init_db_pool, close_db_pool
 from ..database import queries
-from ..kafka_client import get_producer, get_consumer, publish_event, TOPICS
-from ..agent.customer_success_agent import run_agent
+from ..kafka_client import get_producer
+from ..agent.customer_success_agent import customer_success_agent
+from ..channels.gmail_handler import get_gmail_handler
+from ..channels.whatsapp_handler import get_whatsapp_handler
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+
+# Create the agent runner
+_agent_runner = Runner(
+    app="TechCorp_Message_Processor",
+    agent=customer_success_agent,
+    session_service=InMemorySessionService()
+)
+
 from ..channels.gmail_handler import get_gmail_handler
 from ..channels.whatsapp_handler import get_whatsapp_handler
 

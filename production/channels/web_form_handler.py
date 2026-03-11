@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from typing import List, Dict, Optional, Any
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, EmailStr
-from enum import Literal
+from typing_extensions import Literal
 
 from ..database import queries
 from ..kafka_client import publish_event, TOPICS
@@ -170,12 +170,15 @@ async def submit_support_form(submission: SupportFormSubmission) -> SupportFormR
             channel_message_id=ticket_id
         )
         
-        # Publish to Kafka for processing
-        await publish_event(
-            topic=TOPICS['tickets_incoming'],
-            event=normalized_message,
-            key=ticket_id
-        )
+        # Publish to Kafka for processing (optional)
+        try:
+            await publish_event(
+                topic=TOPICS['tickets_incoming'],
+                event=normalized_message,
+                key=ticket_id
+            )
+        except Exception as kafka_error:
+            logger.warning(f"⚠️ Kafka publish failed, continuing without message queue: {kafka_error}")
         
         # Determine estimated response time based on priority
         response_times = {

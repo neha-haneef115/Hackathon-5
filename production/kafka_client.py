@@ -49,8 +49,6 @@ class FTEKafkaProducer:
                 value_serializer=lambda v: json.dumps(v, default=str).encode('utf-8'),
                 key_serializer=lambda k: k.encode('utf-8') if k else None,
                 acks='all',  # Wait for all replicas to acknowledge
-                retries=1,    # One retry before sending to DLQ
-                max_in_flight_requests_per_connection=1,
                 enable_idempotence=True,
             )
             await self.producer.start()

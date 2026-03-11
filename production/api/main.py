@@ -22,7 +22,7 @@ from ..kafka_client import get_producer, publish_event, TOPICS
 from ..database import queries
 from ..channels.gmail_handler import get_gmail_handler
 from ..channels.whatsapp_handler import get_whatsapp_handler
-from .web_form_handler import router as web_form_router
+from ..channels.web_form_handler import router as web_form_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

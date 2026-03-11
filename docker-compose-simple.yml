@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: techcorp-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fte_db}
+      POSTGRES_USER: ${POSTGRES_USER:-fte_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: techcorp-zookeeper
+    ports:
+      - "2181:2181"
+      - "2888:2888"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: techcorp-kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+volumes:
+  postgres_data:

@@ -1,10 +1,9 @@
-version: '3.8'
-
 services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: techcorp-postgres
     environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-ep-soft-music-xxxxx.us-east-2.aws.neon.tech}
       POSTGRES_DB: ${POSTGRES_DB:-fte_db}
       POSTGRES_USER: ${POSTGRES_USER:-fte_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme123}

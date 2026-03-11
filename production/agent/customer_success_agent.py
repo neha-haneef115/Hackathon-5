@@ -8,10 +8,9 @@ import time
 import asyncio
 from typing import Dict, List, Any, Optional
 import google.generativeai as genai
-from google.adk.agents import LlmAgent
+from google.adk.agents import Agent as LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
-from google.adk.tools import Tool
 
 from .prompts import CUSTOMER_SUCCESS_SYSTEM_PROMPT
 from .tools import (
@@ -26,9 +25,12 @@ from .tools import (
 # Configure Gemini API
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
+# Configure Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
 # Create the customer success agent
 customer_success_agent = LlmAgent(
-    name="TechCorp Customer Success FTE",
+    name="TechCorp_Customer_Success_FTE",
     model="gemini-2.0-flash",
     instruction=CUSTOMER_SUCCESS_SYSTEM_PROMPT,
     tools=[
@@ -38,7 +40,14 @@ customer_success_agent = LlmAgent(
         escalate_to_human,
         send_response,
         analyze_sentiment
-    ],
+    ]
+)
+
+# Create the agent runner
+_agent_runner = Runner(
+    app="TechCorp_Customer_Success_FTE",
+    agent=customer_success_agent,
+    session_service=InMemorySessionService()
 )
 
 class CustomerSuccessAgentRunner:
